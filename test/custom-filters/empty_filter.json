@@ -1,0 +1,5 @@
+{
+    "name": "empty_filter",
+    "description": "Filter that allows shows all issues",
+    "paths": ["%"]
+}

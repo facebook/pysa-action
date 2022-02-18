@@ -1,0 +1,141 @@
+name: Pysa Action
+author: Meta
+description: Analyze data flows and detect security and privacy issues in Python code
+branding:
+  icon: 'search'
+  color: 'orange'
+
+inputs:
+  repo-directory:
+    description: Path to the python source code you want to analyze. If you want to analyze the root of your repo, use './'
+    required: true
+  requirements-path:
+    description: Path to requirements file, relative to `repo-directory`, to look for dependencies. Default will look for requirements.txt in the root of repo-directory
+    required: true
+    default: "requirements.txt"
+  use-nightly:
+    description: Use nightly (unstable) version of Pysa
+    required: false
+    type: boolean
+    default: false
+  infer-types:
+    description: Runs pyre infer in-place to add type annotations. Note that this will change your source code during analysis
+    required: false
+    type: boolean
+    default: false
+  # SAPP Inputs
+  sapp-version:
+    description: Version of fb-sapp to be used
+    required: false
+    default: 'latest'
+  sapp-filters-directory:
+    description: Path to your custom SAPP filters
+    required: false
+  include-default-sapp-filters:
+    description: Use SAPP filters packaged with Pysa
+    required: false
+    default: true
+    type: boolean
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '>=3.6'
+
+    - name: Validate repo-directory path
+      run: |
+        if [ ! -d "${{inputs.repo-directory}}" ] || [ -ne "$(ls -A "${{inputs.repo-directory}}")" ]; then
+          echo "Repository path '${{inputs.repo-directory}}' must exist and cannot be empty"
+          exit 1
+        fi
+      shell: bash
+
+    - name: Install Pysa
+      # https://github.com/actions/runner/issues/1483
+      run: |
+        if ${{inputs.use-nightly != 'false'}}; then
+          pip install pyre-check-nightly
+        else
+          pip install pyre-check
+        fi
+      shell: bash
+
+    - name: Install dependencies
+      working-directory: ${{inputs.repo-directory}}
+      run: |
+        if ${{inputs.requirements-path != ''}} && [ -f ${{inputs.requirements-path}} ]; then
+          pip install -r ${{inputs.requirements-path}}
+        else
+          echo 'Path '${{inputs.repo-directory}}/${{inputs.requirements-path}}' does not exist'
+          exit 1
+        fi
+      shell: bash
+
+    - name: Prepare SAPP filters directory
+      run: |
+        filters_path='tmp/sapp_filters'
+        mkdir -p $filters_path
+
+        if ${{inputs.sapp-filters-directory != ''}}; then
+          echo 'Copying custom sapp filters to temporary directory'
+          cp -r ${{inputs.sapp-filters-directory}}/* $filters_path
+        fi
+
+        if ${{inputs.include-default-sapp-filters == 'true'}}; then
+          echo 'Copying default sapp filters to temporary directory'
+          cp -r ${{env.LD_LIBRARY_PATH}}/pyre_check/pysa_filters/* $filters_path
+        fi
+
+        if ! [[ "$(ls -A "$filters_path")" ]]; then
+          echo 'Using neither custom sapp filters or default sapp filters'
+          echo '{
+              "name": "Pass through filter",
+              "description": "Shows all issues",
+              "paths": ["%"]
+          }' > $filters_path/empty_filter.json
+        fi
+
+        echo "SAPP_FILTERS_PATH=$filters_path" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Set up Pyre
+      working-directory: ${{inputs.repo-directory}}
+      run: |
+        if [ ! -f .pyre_configuration ]; then
+          echo '{
+              "source_directories": ["."],
+              "taint_models_path": "${{env.LD_LIBRARY_PATH}}"
+          }' > .pyre_configuration
+        fi
+      shell: bash
+
+    - name: Run Pyre Infer
+      working-directory: ${{inputs.repo-directory}}
+      if: ${{inputs.infer-types == 'true'}}
+      run: |
+        pyre infer
+        pyre infer -i --annotate-from-existing-stubs
+      shell: bash
+
+    - name: Run Pysa
+      working-directory: ${{inputs.repo-directory}}
+      run: |
+        pyre analyze --no-verify --save-results-to=./pysa-output
+      shell: bash
+
+    - name: Saving Pysa results for SAPP
+      uses: actions/upload-artifact@v2
+      with:
+        name: pysa-results
+        path: ${{inputs.repo-directory}}/pysa-output
+        if-no-files-found: error
+
+    - name: Postprocess Pysa results with SAPP
+      uses: facebook/sapp-action@main
+      with:
+        version: ${{inputs.sapp-version}}
+        artifact-handle: pysa-results
+        filters-directory: ${{env.SAPP_FILTERS_PATH}}

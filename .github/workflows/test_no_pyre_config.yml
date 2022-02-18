@@ -1,0 +1,36 @@
+name: Test with no existing Pyre config
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Prepare deliberately_vulnerable_flask_app
+        run: |
+          rm test/pyre-check/.pyre_configuration
+
+      # For testing infer-types option
+      - name: Delete existing type annotations in app.py
+        run: |
+          sed -i 's/ -> None:/:/g' test/pyre-check/documentation/deliberately_vulnerable_flask_app/app.py
+          cat test/pyre-check/documentation/deliberately_vulnerable_flask_app/app.py
+
+      - name: Run Pysa Action
+        uses: ./
+        with:
+          repo-directory: 'test/pyre-check/documentation/deliberately_vulnerable_flask_app'
+          use-nightly: false
+          requirements-path: 'requirements.txt'
+          include-default-sapp-filters: true
+          sapp-filters-directory: test/custom-filters
+          infer-types: true
