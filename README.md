@@ -2,8 +2,11 @@
 [![test_no_pyre_config](https://github.com/facebook/pysa-action/actions/workflows/test_no_pyre_config.yml/badge.svg)](https://github.com/facebook/pysa-action/actions/workflows/test_no_pyre_config.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-
 # Pysa Github Action
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/facebook/pysa-action/main/logo.png">
+</p>
 
 [Python Static Analyzer (Pysa)](https://engineering.fb.com/2020/08/07/security/pysa/) is a security-focused static analysis tool that tracks flows of data from where they originate to where they terminate in a dangerous location. Pysa has been used to detect and disclose security issues on open source Python projects in the past, such as [CVE-2019-19775](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-19775).
 
