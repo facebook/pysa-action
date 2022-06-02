@@ -62,6 +62,10 @@ Pysa Action will install all your project dependencies before the taint analysis
 
 When set to `true`, the action will use the [nightly version of Pysa](https://pypi.org/project/pyre-check-nightly/) to analyze your python code. The nightly version of Pysa tends to be unstable is not recommended you set this option to true unless you are adventurous. By default, the action will use the [latest stable version of Pysa](https://pypi.org/project/pyre-check/).
 
+### `pysa-version`
+
+The version number of [Pysa](https://pypi.org/project/pyre-check/) you would like to use to analyze your python code. By default, the action will use the latest version of Pysa.
+
 ### `infer-types`
 
 If this value is `true`, the action will run [`pyre infer`](https://pyre-check.org/docs/pysa-coverage/#pyre-infer) in-place to add type annotations to your python code. Unless your python code is sufficiently [type annotated](https://www.python.org/dev/peps/pep-0484/), it is highly recommended you set `infer-types` to `true`, since it'll greatly improve the quality and quantity of data flows Pysa is able to found.

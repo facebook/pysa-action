@@ -18,6 +18,10 @@ inputs:
     required: false
     type: boolean
     default: false
+  pysa-version:
+    description: Version of pyre-check package to be used
+    required: false
+    default: 'latest'
   infer-types:
     description: Runs pyre infer in-place to add type annotations. Note that this will change your source code during analysis
     required: false
@@ -56,12 +60,17 @@ runs:
     - name: Install Pysa
       # https://github.com/actions/runner/issues/1483
       run: |
-        if ${{inputs.use-nightly != 'false'}}; then
+        if [ "$USE_NIGHTLY" != 'false' ]; then
           pip install pyre-check-nightly
-        else
+        elif [ "$PYSA_VERSION" = "latest" ]; then
           pip install pyre-check
+        else
+          pip install pyre-check=="$PYSA_VERSION"
         fi
       shell: bash
+      env:
+        PYSA_VERSION: ${{inputs.pysa-version}}
+        USE_NIGHTLY: ${{inputs.use-nightly}}
 
     - name: Install dependencies
       working-directory: ${{inputs.repo-directory}}
