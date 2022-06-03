@@ -29,7 +29,7 @@ inputs:
     default: false
   # SAPP Inputs
   sapp-version:
-    description: Version of fb-sapp to be used
+    description: Version of fb-sapp package to be used
     required: false
     default: 'latest'
   sapp-filters-directory:
@@ -51,11 +51,14 @@ runs:
 
     - name: Validate repo-directory path
       run: |
-        if [ ! -d "${{inputs.repo-directory}}" ] || [ -ne "$(ls -A "${{inputs.repo-directory}}")" ]; then
-          echo "Repository path '${{inputs.repo-directory}}' must exist and cannot be empty"
+        if [ ! -d "$REPO_DIR" ] || [ -ne "$(ls -A "$REPO_DIR")" ]; then
+          echo "Repository path $REPO_DIR must exist and cannot be empty"
           exit 1
         fi
       shell: bash
+      env:
+        # https://github.com/actions/runner/issues/665
+        REPO_DIR: ${{inputs.repo-directory}}
 
     - name: Install Pysa
       # https://github.com/actions/runner/issues/1483
@@ -75,25 +78,28 @@ runs:
     - name: Install dependencies
       working-directory: ${{inputs.repo-directory}}
       run: |
-        if ${{inputs.requirements-path != ''}} && [ -f ${{inputs.requirements-path}} ]; then
+        if [ "$REQUIREMENTS_PATH" != '' ] && [ -f "$REQUIREMENTS_PATH" ]; then
           pip install -r ${{inputs.requirements-path}}
         else
-          echo 'Path '${{inputs.repo-directory}}/${{inputs.requirements-path}}' does not exist'
+          echo "Path $REPO_DIR/$REQUIREMENTS_PATH does not exist"
           exit 1
         fi
       shell: bash
+      env:
+        REQUIREMENTS_PATH: ${{inputs.requirements-path}}
+        REPO_DIR: ${{inputs.repo-directory}}
 
     - name: Prepare SAPP filters directory
       run: |
         filters_path='tmp/sapp_filters'
         mkdir -p $filters_path
 
-        if ${{inputs.sapp-filters-directory != ''}}; then
+        if [ "$FILTERS_DIR" != '' ]; then
           echo 'Copying custom sapp filters to temporary directory'
-          cp -r ${{inputs.sapp-filters-directory}}/* $filters_path
+          cp -r "$FILTERS_DIR"/* $filters_path
         fi
 
-        if ${{inputs.include-default-sapp-filters == 'true'}}; then
+        if [ "$INCLUDE_DEFAULT_SAPP_FILTERS" == 'true' ]; then
           echo 'Copying default sapp filters to temporary directory'
           cp -r ${{env.LD_LIBRARY_PATH}}/pyre_check/pysa_filters/* $filters_path
         fi
@@ -109,6 +115,9 @@ runs:
 
         echo "SAPP_FILTERS_PATH=$filters_path" >> $GITHUB_ENV
       shell: bash
+      env:
+        FILTERS_DIR: ${{inputs.sapp-filters-directory}}
+        INCLUDE_DEFAULT_SAPP_FILTERS: ${{inputs.include-default-sapp-filters}}
 
     - name: Set up Pyre
       working-directory: ${{inputs.repo-directory}}
