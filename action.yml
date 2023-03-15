@@ -11,7 +11,7 @@ inputs:
     required: true
   requirements-path:
     description: Path to requirements file, relative to `repo-directory`, to look for dependencies. Default will look for requirements.txt in the root of repo-directory
-    required: true
+    required: false
     default: "requirements.txt"
   use-nightly:
     description: Use nightly (unstable) version of Pysa
@@ -39,6 +39,11 @@ inputs:
     description: Use SAPP filters packaged with Pysa
     required: false
     default: true
+    type: boolean
+  use-poetry:
+    description: Use poetry to install dependencies
+    required: false
+    default: false
     type: boolean
 
 runs:
@@ -78,16 +83,22 @@ runs:
     - name: Install dependencies
       working-directory: ${{inputs.repo-directory}}
       run: |
-        if [ "$REQUIREMENTS_PATH" != '' ] && [ -f "$REQUIREMENTS_PATH" ]; then
-          pip install -r ${{inputs.requirements-path}}
+        if [ "$USE_POETRY" ]; then
+          pip install poetry
+          poetry install --no-root
         else
-          echo "Path $REPO_DIR/$REQUIREMENTS_PATH does not exist"
-          exit 1
+          if [ "$REQUIREMENTS_PATH" != '' ] && [ -f "$REQUIREMENTS_PATH" ]; then
+            pip install -r ${{inputs.requirements-path}}
+          else
+            echo "Path $REPO_DIR/$REQUIREMENTS_PATH does not exist"
+            exit 1
+          fi
         fi
       shell: bash
       env:
         REQUIREMENTS_PATH: ${{inputs.requirements-path}}
         REPO_DIR: ${{inputs.repo-directory}}
+        USE_POETRY: ${{inputs.use-poetry}}
 
     - name: Prepare SAPP filters directory
       run: |
