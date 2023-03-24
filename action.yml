@@ -83,7 +83,7 @@ runs:
     - name: Install dependencies
       working-directory: ${{inputs.repo-directory}}
       run: |
-        if [ "$USE_POETRY" ]; then
+        if [ "$USE_POETRY" = true ]; then
           pip install poetry
           poetry install --no-root
         else
