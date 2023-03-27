@@ -92,6 +92,11 @@ By default, Pysa Action will use the default SAPP filters to filter its results.
 - You prefer to apply no filters to your Pysa results, because you would like to see all Pysa results
 - You prefer to filter Pysa results only using the SAPP filters you've written in `sapp-filters-directory`
 
+### `use-poetry`
+When set to `true`, Pysa Action will install poetry with the Python Package installer and use it to install dependencies.
+
+By default, it is set to `false` and the requirements file is used as a source of requirements to be installed by the Python Package Installer (pip).
+
 ## License
 
 Pysa Action is licensed under the MIT license.
