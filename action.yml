@@ -50,7 +50,7 @@ runs:
   using: "composite"
   steps:
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: '>=3.6'
 
@@ -156,7 +156,7 @@ runs:
       shell: bash
 
     - name: Saving Pysa results for SAPP
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: pysa-results
         path: ${{inputs.repo-directory}}/pysa-output
